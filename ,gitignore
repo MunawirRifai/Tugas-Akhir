@@ -1,0 +1,18 @@
+# VSCode
+.vscode/
+
+# Flutter
+.dart_tool/
+build/
+.idea/
+
+# Java / Spring
+target/
+
+# Environment
+.env
+
+# Logs
+*.log
+hs_err_pid*
+replay_pid*
