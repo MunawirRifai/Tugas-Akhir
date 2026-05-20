@@ -18,6 +18,8 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
 
     List<Food> findByClaimedByAndStatusOrderByIdDesc(Long claimedBy, String status);
 
+    List<Food> findByClaimedByOrderByIdDesc(Long claimedBy);
+
     long countByUserId(Long userId);
 
     long countByClaimedByAndStatus(Long claimedBy, String status);

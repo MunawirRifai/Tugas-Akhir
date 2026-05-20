@@ -135,9 +135,7 @@ public class FoodService {
 
         List<Food> myDonation = foodRepository.findByUserIdOrderByIdDesc(userId);
 
-        List<Food> myClaim = foodRepository.findByClaimedByAndStatusOrderByIdDesc(
-                userId,
-                "PICKED_UP");
+        List<Food> myClaim = foodRepository.findByClaimedByOrderByIdDesc(userId);
 
         Map<String, Object> result = new HashMap<>();
 
@@ -213,12 +211,8 @@ public class FoodService {
         // Simpan jumlah yang diambil
         food.setClaimedQuantity(claimQty);
 
-        // Jika stok habis
-        if (newQuantity == 0) {
-            food.setStatus("ON_THE_WAY");
-        } else {
-            food.setStatus("POSTED");
-        }
+        // Selalu set status menjadi ON_THE_WAY saat diklaim agar pengklaim dapat melanjutkan pengambilan
+        food.setStatus("ON_THE_WAY");
 
         foodRepository.save(food);
     }

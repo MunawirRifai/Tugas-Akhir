@@ -41,25 +41,51 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 }
 
-  Color getStatusColor(String status) {
-    switch (status) {
-      case 'CANCELED':
-        return Colors.red;
-      case 'PICKED_UP':
-        return Colors.green;
-      default:
-        return Colors.orange;
+  Color getStatusColor(String status, bool isDonation) {
+    if (isDonation) {
+      switch (status) {
+        case 'CANCELED':
+          return Colors.red;
+        case 'PICKED_UP':
+          return Colors.green;
+        default:
+          return Colors.orange;
+      }
+    } else {
+      switch (status) {
+        case 'CANCELED':
+          return Colors.red;
+        case 'PICKED_UP':
+        case 'POSTED': // Completed partial claims return to POSTED but are finished for the claimer
+          return Colors.green;
+        case 'ON_THE_WAY':
+        default:
+          return Colors.orange;
+      }
     }
   }
 
-  String getStatusText(String status) {
-    switch (status) {
-      case 'CANCELED':
-        return 'Canceled';
-      case 'PICKED_UP':
-        return 'Claimed';
-      default:
-        return 'Posted';
+  String getStatusText(String status, bool isDonation) {
+    if (isDonation) {
+      switch (status) {
+        case 'CANCELED':
+          return 'Canceled';
+        case 'PICKED_UP':
+          return 'Claimed';
+        default:
+          return 'Posted';
+      }
+    } else {
+      switch (status) {
+        case 'CANCELED':
+          return 'Canceled';
+        case 'PICKED_UP':
+        case 'POSTED':
+          return 'Claimed';
+        case 'ON_THE_WAY':
+        default:
+          return 'On The Way';
+      }
     }
   }
 
@@ -219,7 +245,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Text('Jumlah: ${item['quantity']}'),
+                                          Text(
+                                            showDonation
+                                                ? 'Jumlah: ${item['quantity']}'
+                                                : 'Jumlah: ${item['claimed_quantity']}',
+                                          ),
                                           const SizedBox(height: 4),
                                           RichText(
                                             text: TextSpan(
@@ -231,10 +261,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                                   text: 'Status: ',
                                                 ),
                                                 TextSpan(
-                                                  text: getStatusText(status),
+                                                  text: getStatusText(status, showDonation),
                                                   style: TextStyle(
                                                     color: getStatusColor(
                                                       status,
+                                                      showDonation,
                                                     ),
                                                     fontWeight: FontWeight.bold,
                                                   ),
