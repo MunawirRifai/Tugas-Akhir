@@ -211,8 +211,13 @@ public class FoodService {
         // Simpan jumlah yang diambil
         food.setClaimedQuantity(claimQty);
 
-        // Selalu set status menjadi ON_THE_WAY saat diklaim agar pengklaim dapat melanjutkan pengambilan
-        food.setStatus("ON_THE_WAY");
+        // Selalu set status menjadi ON_THE_WAY saat diklaim agar pengklaim dapat
+        // melanjutkan pengambilan
+        if (newQuantity == 0) {
+            food.setStatus("ON_THE_WAY");
+        } else {
+            food.setStatus("POSTED");
+        }
 
         foodRepository.save(food);
     }
@@ -246,6 +251,32 @@ public class FoodService {
         food.setClaimedQuantity(0);
 
         foodRepository.save(food);
+    }
+
+    public void clearDonationHistory(Long userId) {
+
+        List<Food> foods = foodRepository.findByUserIdOrderByIdDesc(userId);
+
+        foodRepository.deleteAll(foods);
+    }
+
+    public void clearClaimHistory(Long userId) {
+
+        List<Food> foods = foodRepository.findByClaimedByAndStatusOrderByIdDesc(
+                userId,
+                "PICKED_UP");
+
+        for (Food food : foods) {
+
+            food.setClaimedBy(null);
+            food.setClaimedQuantity(0);
+
+            if (!food.getStatus().equals("CANCELED")) {
+                food.setStatus("POSTED");
+            }
+        }
+
+        foodRepository.saveAll(foods);
     }
 
 }

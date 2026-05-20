@@ -134,4 +134,33 @@ class FoodService {
       headers: {'Authorization': 'Bearer $token'},
     );
   }
+
+
+  static Future<void> clearDonationHistory(String token) async {
+
+  final response = await http.delete(
+    Uri.parse('$baseUrl/history/donation'),
+    headers: {
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed clear donation history');
+  }
+}
+
+static Future<void> clearClaimHistory(String token) async {
+
+  final response = await http.delete(
+    Uri.parse('$baseUrl/history/claim'),
+    headers: {
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed clear claim history');
+  }
+}
 }

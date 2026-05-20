@@ -132,4 +132,26 @@ public class FoodController {
         foodService.cancelPickup(id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/history/donation")
+public ResponseEntity<?> clearDonationHistory(
+        Authentication authentication) {
+
+    Long userId = Long.parseLong(authentication.getName());
+
+    foodService.clearDonationHistory(userId);
+
+    return ResponseEntity.ok().build();
+}
+
+@DeleteMapping("/history/claim")
+public ResponseEntity<?> clearClaimHistory(
+        Authentication authentication) {
+
+    Long userId = Long.parseLong(authentication.getName());
+
+    foodService.clearClaimHistory(userId);
+
+    return ResponseEntity.ok().build();
+}
 }
