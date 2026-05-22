@@ -107,8 +107,7 @@ public class FoodController {
     public ResponseEntity<?> pickFood(
             @PathVariable Long id,
             @RequestParam(value = "quantity", defaultValue = "1") Integer quantity,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         Long userId = Long.parseLong(authentication.getName());
 
         foodService.pickFood(id, userId, quantity);
@@ -117,8 +116,7 @@ public class FoodController {
                 ApiResponse.builder()
                         .success(true)
                         .message("Food picked")
-                        .build()
-        );
+                        .build());
     }
 
     @PutMapping("/{id}/confirm")
@@ -134,24 +132,92 @@ public class FoodController {
     }
 
     @DeleteMapping("/history/donation")
-public ResponseEntity<?> clearDonationHistory(
-        Authentication authentication) {
+    public ResponseEntity<?> clearDonationHistory(
+            Authentication authentication) {
 
-    Long userId = Long.parseLong(authentication.getName());
+        Long userId = Long.parseLong(authentication.getName());
 
-    foodService.clearDonationHistory(userId);
+        foodService.clearDonationHistory(userId);
 
-    return ResponseEntity.ok().build();
-}
+        return ResponseEntity.ok().build();
+    }
 
-@DeleteMapping("/history/claim")
-public ResponseEntity<?> clearClaimHistory(
-        Authentication authentication) {
+    @DeleteMapping("/history/claim")
+    public ResponseEntity<?> clearClaimHistory(
+            Authentication authentication) {
 
-    Long userId = Long.parseLong(authentication.getName());
+        Long userId = Long.parseLong(authentication.getName());
 
-    foodService.clearClaimHistory(userId);
+        foodService.clearClaimHistory(userId);
 
-    return ResponseEntity.ok().build();
-}
+        return ResponseEntity.ok().build();
+    }
+
+    // get data tanpa jwt
+    @GetMapping("/test/public")
+    public ResponseEntity<?> getFoodsWithoutJwt() {
+
+        List<Map<String, Object>> data = foodService.getAllFoods();
+
+        return ResponseEntity.ok(
+                ApiResponse.builder()
+                        .success(true)
+                        .message("Foods loaded without JWT")
+                        .data(data)
+                        .build());
+    }
+
+    // rubah data tanpa jwt
+    @PutMapping("/test/public/{id}/pick")
+    public ResponseEntity<?> pickFoodWithoutJwt(
+            @PathVariable Long id,
+            @RequestParam(value = "quantity", defaultValue = "1") Integer quantity,
+            @RequestParam Long userId) {
+
+        foodService.pickFood(id, userId, quantity);
+
+        return ResponseEntity.ok(
+                ApiResponse.builder()
+                        .success(true)
+                        .message("Food picked without JWT")
+                        .build());
+    }
+
+    // post data tanpa jwt
+    // tambah makanan tanpa jwt
+    @PostMapping(value = "/test/public", consumes = "multipart/form-data")
+    public ResponseEntity<?> createFoodWithoutJwt(
+
+            @RequestParam Long userId,
+
+            @RequestParam("foodName") String foodName,
+            @RequestParam("description") String description,
+            @RequestParam("quantity") Integer quantity,
+            @RequestParam("latitude") Double latitude,
+            @RequestParam("longitude") Double longitude,
+            @RequestParam("address") String address,
+            @RequestParam("expiredAt") String expiredAt,
+            @RequestParam("photo") MultipartFile photo
+
+    ) throws Exception {
+
+        CreateFoodRequest request = new CreateFoodRequest();
+
+        request.setFoodName(foodName);
+        request.setDescription(description);
+        request.setQuantity(quantity);
+        request.setLatitude(latitude);
+        request.setLongitude(longitude);
+        request.setAddress(address);
+        request.setExpiredAt(expiredAt);
+
+        Map<String, Object> data = foodService.createFood(userId, request, photo);
+
+        return ResponseEntity.ok(
+                ApiResponse.builder()
+                        .success(true)
+                        .message("Food created without JWT")
+                        .data(data)
+                        .build());
+    }
 }

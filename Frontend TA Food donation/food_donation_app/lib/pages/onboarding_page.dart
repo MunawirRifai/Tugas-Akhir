@@ -1,5 +1,9 @@
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../theme/app_theme.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -9,184 +13,457 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  final PageController _pageController = PageController();
-  int currentPage = 0;
+  static const String _onboardingStorageKey = 'has_seen_onboarding_v1';
 
-  final List<Map<String, String>> onboardingData = [
-    {
-      'title': 'Berbagi Tanpa Sisa',
-      'subtitle': 'Stop buang makanan',
-      'image': 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c'
-    },
-    {
-      'title': 'Klaim dalam\nHitungan Detik',
-      'subtitle': 'Rebut Donasi Tercepat',
-      'image': 'https://images.unsplash.com/photo-1469571486292-b53601020f52'
-    },
-    {
-      'title': 'Niat Baik, Privasi\nTerjaga',
-      'subtitle': 'Jangan takut berbagi',
-      'image': 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846'
-    },
+  final PageController _pageController = PageController();
+
+  int _currentPage = 0;
+  bool _isFinishing = false;
+
+  static const List<_OnboardingItem> _items = [
+    _OnboardingItem(
+      title: 'Berbagi Tanpa Sisa',
+      description:
+          'Donatur dapat membagikan makanan layak konsumsi dengan proses posting yang cepat dan jelas.',
+      badge: 'Donasi real-time',
+      icon: Icons.restaurant_rounded,
+      color: AppColors.primary,
+    ),
+    _OnboardingItem(
+      title: 'Klaim Lebih Cepat',
+      description:
+          'Konsumen dapat melihat makanan terdekat, jarak lokasi, dan status ketersediaan secara ringkas.',
+      badge: 'Radius lokasi',
+      icon: Icons.near_me_rounded,
+      color: AppColors.teal,
+    ),
+    _OnboardingItem(
+      title: 'Aman dan Terukur',
+      description:
+          'Alur aplikasi disiapkan untuk analisis keamanan, bandwidth, dan performa jaringan.',
+      badge: 'Network-ready',
+      icon: Icons.security_rounded,
+      color: AppColors.accent,
+    ),
   ];
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _finishOnboarding() async {
+    if (_isFinishing) return;
+
+    setState(() => _isFinishing = true);
+
+    final SharedPreferences preferences =
+        await SharedPreferences.getInstance();
+
+    await preferences.setBool(_onboardingStorageKey, true);
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/login',
+      (route) => false,
+    );
+  }
+
+  Future<void> _goNext() async {
+    if (_currentPage >= _items.length - 1) {
+      await _finishOnboarding();
+      return;
+    }
+
+    await _pageController.nextPage(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool isLastPage = _currentPage == _items.length - 1;
+
     return Scaffold(
-      backgroundColor: const Color(0xffF7F7F7),
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: onboardingData.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final item = onboardingData[index];
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
-                    ),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 24),
-
-                        Expanded(
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: const Color(0xffEFEFE5),
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: Image.network(
-                                      item['image']!,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                Text(
-                                  item['title']!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  item['subtitle']!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 30),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.x3,
+            AppSpacing.x2,
+            AppSpacing.x3,
+            AppSpacing.x3,
+          ),
+          child: Column(
+            children: [
+              _OnboardingHeader(
+                isDisabled: _isFinishing,
+                onSkip: _finishOnboarding,
               ),
-            ),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                onboardingData.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: currentPage == index ? 22 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: currentPage == index
-                        ? const Color(0xff0A7A42)
-                        : const Color(0xffB9D9C3),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+              const SizedBox(height: AppSpacing.x2),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _items.length,
+                  onPageChanged: (index) {
+                    setState(() => _currentPage = index);
+                  },
+                  itemBuilder: (context, index) {
+                    return _OnboardingSlide(
+                      item: _items[index],
+                    );
+                  },
                 ),
               ),
-            ),
-
-            const SizedBox(height: 32),
-
-            TextButton(
-              onPressed: () {
-                // skip ke login page
-              },
-              child: const Text(
-                'Skip',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                ),
+              const SizedBox(height: AppSpacing.x2),
+              _PageIndicator(
+                length: _items.length,
+                activeIndex: _currentPage,
               ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: SizedBox(
+              const SizedBox(height: AppSpacing.x3),
+              SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (currentPage < onboardingData.length - 1) {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    } else {
-                      // pindah ke login page
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff8FD5A9),
-                    foregroundColor: Colors.white,
-                    elevation: 6,
-                    shadowColor: Colors.green.withValues(alpha: 0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    currentPage == onboardingData.length - 1
-                        ? 'Start'
-                        : 'Next',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  onPressed: _isFinishing ? null : _goNext,
+                  child: _isFinishing
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(isLastPage ? 'Mulai Sekarang' : 'Lanjut'),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 36),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _OnboardingHeader extends StatelessWidget {
+  final bool isDisabled;
+  final VoidCallback onSkip;
+
+  const _OnboardingHeader({
+    required this.isDisabled,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.x2,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.card,
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.volunteer_activism_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'FoodShare',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: isDisabled ? null : onSkip,
+          child: const Text('Lewati'),
+        ),
+      ],
+    );
+  }
+}
+
+class _OnboardingSlide extends StatelessWidget {
+  final _OnboardingItem item;
+
+  const _OnboardingSlide({
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double illustrationHeight = math.min(
+          300,
+          math.max(220, constraints.maxHeight * 0.46),
+        );
+
+        return SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: illustrationHeight,
+                  width: double.infinity,
+                  child: _PremiumIllustration(item: item),
+                ),
+                const SizedBox(height: AppSpacing.x4),
+                Text(
+                  item.title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: AppSpacing.x2),
+                Text(
+                  item.description,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PremiumIllustration extends StatelessWidget {
+  final _OnboardingItem item;
+
+  const _PremiumIllustration({
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isCompact = constraints.maxHeight < 250;
+        final double iconBoxSize = isCompact ? 72 : 88;
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.x3),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: AppShadows.card,
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -32,
+                right: -24,
+                child: Container(
+                  width: 128,
+                  height: 128,
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -36,
+                left: -28,
+                child: Container(
+                  width: 132,
+                  height: 132,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primarySoft,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: iconBoxSize,
+                      height: iconBoxSize,
+                      decoration: BoxDecoration(
+                        color: item.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(
+                          color: item.color.withValues(alpha: 0.18),
+                        ),
+                      ),
+                      child: Icon(
+                        item.icon,
+                        color: item.color,
+                        size: isCompact ? 34 : 42,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.x2),
+                    _MockFoodCard(
+                      badge: item.badge,
+                      color: item.color,
+                      isCompact: isCompact,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MockFoodCard extends StatelessWidget {
+  final String badge;
+  final Color color;
+  final bool isCompact;
+
+  const _MockFoodCard({
+    required this.badge,
+    required this.color,
+    required this.isCompact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: isCompact ? 230 : 270,
+      padding: const EdgeInsets.all(AppSpacing.x2),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.accentSoft,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Icon(
+              Icons.fastfood_rounded,
+              color: AppColors.accent,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.x2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Paket Makanan Siap Klaim',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.circle,
+                      size: 8,
+                      color: color,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        badge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PageIndicator extends StatelessWidget {
+  final int length;
+  final int activeIndex;
+
+  const _PageIndicator({
+    required this.length,
+    required this.activeIndex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(length, (index) {
+        final bool isActive = index == activeIndex;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: isActive ? 28 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : AppColors.primarySoft,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _OnboardingItem {
+  final String title;
+  final String description;
+  final String badge;
+  final IconData icon;
+  final Color color;
+
+  const _OnboardingItem({
+    required this.title,
+    required this.description,
+    required this.badge,
+    required this.icon,
+    required this.color,
+  });
 }

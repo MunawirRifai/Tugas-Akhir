@@ -1,7 +1,10 @@
-
 import 'package:flutter/material.dart';
-import 'package:food_donation_app/pages/main_navigation_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/auth/auth_scaffold.dart';
+import 'main_navigation_page.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,171 +15,225 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  static final RegExp _emailRegex = RegExp(
+    r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+  );
 
-  bool isLoading = false;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  Future<void> login() async {
-    setState(() => isLoading = true);
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    final form = _formKey.currentState;
+
+    if (form == null || !form.validate()) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    setState(() => _isLoading = true);
 
     final response = await AuthService.login(
-      email: emailController.text,
-      password: passwordController.text,
+      email: _emailController.text,
+      password: _passwordController.text,
     );
-
-    setState(() => isLoading = false);
 
     if (!mounted) return;
 
-    if (response['success'] == true) {
-  final accessToken = response['data']['access_token'];
+    setState(() => _isLoading = false);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => MainNavigationPage(
-            token: accessToken,
-          ),
+    if (response['success'] != true) {
+      _showSnack(
+        AuthService.messageOf(
+          response,
+          fallback: 'Login gagal. Periksa email dan password.',
         ),
+        isError: true,
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response['message'] ?? 'Login failed'),
-        ),
-      );
+      return;
     }
+
+    final accessToken = AuthService.extractAccessToken(response);
+
+    if (accessToken == null) {
+      _showSnack(
+        'Login berhasil, tetapi access token tidak ditemukan pada respons backend.',
+        isError: true,
+      );
+      return;
+    }
+
+    final SharedPreferences preferences =
+        await SharedPreferences.getInstance();
+
+    await preferences.setString('access_token', accessToken);
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => MainNavigationPage(token: accessToken),
+      ),
+      (route) => false,
+    );
+  }
+
+  void _goToRegister() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const RegisterPage(),
+      ),
+    );
+  }
+
+  void _showSnack(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: isError ? AppColors.danger : AppColors.textPrimary,
+        content: Text(message),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xffF7F7F7),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-
-              const Text(
-                'LOGO',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xffB8E3C8),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xff0C6B3C),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Login',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterPage(),
-                            ),
-                          );
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Center(
-                            child: Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff8FD5A9),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Login',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
-                        ),
-                ),
-              ),
-            ],
+    return AuthScaffold(
+      title: 'Masuk ke Akun',
+      subtitle:
+          'Gunakan akun yang sama untuk membuat donasi makanan dan mengklaim makanan.',
+      footer: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Belum punya akun?',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
+          TextButton(
+            onPressed: _isLoading ? null : _goToRegister,
+            child: const Text('Daftar'),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthModeSwitch(
+              activeMode: AuthMode.login,
+              onRegisterTap: _isLoading ? null : _goToRegister,
+            ),
+            const SizedBox(height: AppSpacing.x3),
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              enabled: !_isLoading,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                hintText: 'nama@email.com',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              validator: (value) {
+                final email = value?.trim() ?? '';
+
+                if (email.isEmpty) {
+                  return 'Email tidak boleh kosong';
+                }
+
+                if (!_emailRegex.hasMatch(email)) {
+                  return 'Format email tidak valid';
+                }
+
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.x2),
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.done,
+              enabled: !_isLoading,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                hintText: 'Masukkan password',
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                ),
+              ),
+              validator: (value) {
+                final password = value ?? '';
+
+                if (password.isEmpty) {
+                  return 'Password tidak boleh kosong';
+                }
+
+                if (password.length < 8) {
+                  return 'Password minimal 8 karakter';
+                }
+
+                return null;
+              },
+              onFieldSubmitted: (_) {
+                if (!_isLoading) {
+                  _login();
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.x1),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        _showSnack(
+                          'Fitur reset password belum tersedia di backend.',
+                          isError: false,
+                        );
+                      },
+                child: const Text('Lupa password?'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.x2),
+            AuthPrimaryButton(
+              label: 'Masuk',
+              icon: Icons.login_rounded,
+              isLoading: _isLoading,
+              onPressed: _login,
+            ),
+            const SizedBox(height: AppSpacing.x2),
+            const AuthInfoBox(
+              icon: Icons.verified_user_outlined,
+              text:
+                  'Sistem memakai satu akun User. Setelah login, user dapat menjadi donatur maupun konsumen.',
+            ),
+          ],
         ),
       ),
     );

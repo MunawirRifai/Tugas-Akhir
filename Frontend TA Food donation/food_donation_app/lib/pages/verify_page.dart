@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/auth/auth_scaffold.dart';
 import 'login_page.dart';
 
 class VerifyPage extends StatefulWidget {
   final String verificationToken;
+  final String? email;
 
   const VerifyPage({
     super.key,
     required this.verificationToken,
+    this.email,
   });
 
   @override
@@ -15,198 +21,155 @@ class VerifyPage extends StatefulWidget {
 }
 
 class _VerifyPageState extends State<VerifyPage> {
-  final codeController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _codeController = TextEditingController();
 
-  bool isLoading = false;
+  bool _isLoading = false;
 
-  Future<void> verify() async {
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
 
-    if (codeController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kode OTP tidak boleh kosong'),
+  Future<void> _verify() async {
+    final form = _formKey.currentState;
+
+    if (form == null || !form.validate()) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    setState(() => _isLoading = true);
+
+    final response = await AuthService.verifyRegister(
+      verificationToken: widget.verificationToken,
+      code: _codeController.text,
+    );
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (response['success'] != true) {
+      _showSnack(
+        AuthService.messageOf(
+          response,
+          fallback: 'Verifikasi gagal. Periksa kembali kode OTP.',
         ),
+        isError: true,
       );
       return;
     }
 
-    try {
+    _showSnack(
+      'Verifikasi berhasil. Silakan login.',
+      isError: false,
+    );
 
-      setState(() {
-        isLoading = true;
-      });
-
-      final response = await AuthService.verifyRegister(
-        verificationToken: widget.verificationToken,
-        code: codeController.text,
-      );
-
-      setState(() {
-        isLoading = false;
-      });
-
-      if (!mounted) return;
-
-      if (response['success'] == true) {
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verifikasi berhasil'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const LoginPage(),
-          ),
-          (route) => false,
-        );
-
-      } else {
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              response['message'] ?? 'Verification failed',
-            ),
-          ),
-        );
-      }
-
-    } catch (e) {
-
-      setState(() {
-        isLoading = false;
-      });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Cannot connect to backend: $e',
-          ),
-        ),
-      );
-    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
+      (route) => false,
+    );
   }
 
-  @override
-  void dispose() {
-    codeController.dispose();
-    super.dispose();
+  void _showSnack(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.danger : AppColors.textPrimary,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final String targetEmail = widget.email?.trim().isNotEmpty == true
+        ? widget.email!.trim()
+        : 'email Anda';
 
-    return Scaffold(
-      backgroundColor: const Color(0xffF7F7F7),
-
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 30,
-            vertical: 30,
-          ),
-
-          child: Column(
-            children: [
-
-              const SizedBox(height: 40),
-
-              const Align(
-                alignment: Alignment.centerLeft,
-
-                child: Text(
-                  'Verification Code',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
+    return AuthScaffold(
+      leading: IconButton(
+        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+        icon: const Icon(Icons.arrow_back_rounded),
+      ),
+      title: 'Verifikasi Email',
+      subtitle: 'Masukkan kode OTP yang dikirim ke $targetEmail.',
+      child: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const AuthInfoBox(
+              icon: Icons.mark_email_read_outlined,
+              text:
+                  'Kode OTP digunakan untuk memastikan akun dibuat oleh pemilik email yang valid.',
+            ),
+            const SizedBox(height: AppSpacing.x3),
+            TextFormField(
+              controller: _codeController,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              textAlign: TextAlign.center,
+              enabled: !_isLoading,
+              maxLength: 4,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    letterSpacing: 8,
                   ),
-                ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Kode OTP',
+                hintText: '0000',
+                counterText: '',
+                prefixIcon: Icon(Icons.pin_outlined),
               ),
+              validator: (value) {
+                final code = value?.trim() ?? '';
 
-              const SizedBox(height: 10),
+                if (code.isEmpty) {
+                  return 'Kode OTP tidak boleh kosong';
+                }
 
-              const Text(
-                'Kode OTP telah dikirim ke email kamu',
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
+                if (code.length != 4) {
+                  return 'Kode OTP harus 4 digit';
+                }
 
-              const SizedBox(height: 40),
-
-              TextField(
-                controller: codeController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                maxLength: 4,
-
-                decoration: InputDecoration(
-                  hintText: '0000',
-                  counterText: '',
-
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextButton(
-                onPressed: () {
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Silakan cek email kamu kembali',
-                      ),
-                    ),
-                  );
-                },
-
-                child: const Text(
-                  'Resend Code',
-                ),
-              ),
-
-              const Spacer(),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : verify,
-
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff8FD5A9),
-
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-
-                  child: isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
-                      : const Text(
-                          'Verify',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
+                return null;
+              },
+              onFieldSubmitted: (_) {
+                if (!_isLoading) {
+                  _verify();
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.x2),
+            TextButton.icon(
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      _showSnack(
+                        'Endpoint resend OTP belum tersedia. Silakan cek email kembali.',
+                        isError: false,
+                      );
+                    },
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Kirim ulang kode'),
+            ),
+            const SizedBox(height: AppSpacing.x3),
+            AuthPrimaryButton(
+              label: 'Verifikasi',
+              icon: Icons.verified_rounded,
+              isLoading: _isLoading,
+              onPressed: _verify,
+            ),
+          ],
         ),
       ),
     );
