@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { 
+import {
   LayoutDashboard, Users, Utensils, AlertCircle, Settings, LogOut, TrendingUp, PackageCheck, X, BadgeCheck
 } from 'lucide-react';
 import './index.css';
@@ -167,7 +167,6 @@ function UsersScreen() {
             <thead>
               <tr>
                 <th>Nama Pengguna</th>
-                <th>Tipe Akun</th>
                 <th>Donasi Berhasil</th>
                 <th>Laporan</th>
                 <th>Reputasi</th>
@@ -178,7 +177,6 @@ function UsersScreen() {
               {users.map((u) => (
                 <tr key={u.id}>
                   <td style={{ fontWeight: 500 }}>{u.name}</td>
-                  <td>{u.type}</td>
                   <td style={{ textAlign: 'center' }}>{u.donations}x</td>
                   <td style={{ textAlign: 'center', color: u.reports > 0 ? '#ef4444' : 'inherit', fontWeight: u.reports > 0 ? 'bold' : 'normal' }}>
                     {u.reports}
@@ -194,7 +192,7 @@ function UsersScreen() {
                   </td>
                   <td style={{ display: 'flex', gap: '8px' }}>
                     {u.status === 'Terpercaya' ? (
-                      <button className="action-btn" style={{color: 'var(--text-muted)'}}>Hapus Badge</button>
+                      <button className="action-btn" style={{ color: 'var(--text-muted)' }}>Hapus Badge</button>
                     ) : (
                       <button className="action-btn blue">Jadikan Terpercaya</button>
                     )}
@@ -253,7 +251,7 @@ function ReportsScreen() {
                     {r.status === 'Open' ? (
                       <button className="action-btn danger">Beri Penalti (+1 Laporan)</button>
                     ) : (
-                      <button className="action-btn" style={{color: 'var(--text-muted)'}}>Lihat Detail</button>
+                      <button className="action-btn" style={{ color: 'var(--text-muted)' }}>Lihat Detail</button>
                     )}
                   </td>
                 </tr>
@@ -304,12 +302,12 @@ function SettingsScreen() {
             <h2>Kategori Donasi Makanan</h2>
           </div>
           <div style={{ marginBottom: '24px' }}>
-            <span className="category-tag">Makanan Berat <button><X size={14}/></button></span>
-            <span className="category-tag">Bahan Mentah <button><X size={14}/></button></span>
-            <span className="category-tag">Roti & Kue <button><X size={14}/></button></span>
-            <span className="category-tag">Sayur & Buah <button><X size={14}/></button></span>
+            <span className="category-tag">Makanan Berat <button><X size={14} /></button></span>
+            <span className="category-tag">Bahan Mentah <button><X size={14} /></button></span>
+            <span className="category-tag">Roti & Kue <button><X size={14} /></button></span>
+            <span className="category-tag">Sayur & Buah <button><X size={14} /></button></span>
           </div>
-          
+
           <div className="form-group">
             <label>Tambah Kategori Baru</label>
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -364,31 +362,31 @@ function App() {
           <h2>FoodAdmin</h2>
         </div>
         <nav className="nav-links">
-          <button 
+          <button
             className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveTab('dashboard')}
           >
             <LayoutDashboard size={20} /> Dashboard
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'donations' ? 'active' : ''}`}
             onClick={() => setActiveTab('donations')}
           >
             <Utensils size={20} /> Data Donasi
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
             <Users size={20} /> Pengguna
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`}
             onClick={() => setActiveTab('reports')}
           >
             <AlertCircle size={20} /> Laporan Masalah
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
             style={{ marginTop: 'auto' }}
