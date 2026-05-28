@@ -38,7 +38,7 @@ class HomeBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      notchMargin: 10,
+      notchMargin: 8,
       elevation: 0,
       color: AppColors.surface,
       surfaceTintColor: AppColors.surface,
@@ -65,7 +65,10 @@ class HomeBottomNavBar extends StatelessWidget {
                   onTap: onChanged,
                 ),
               ),
-              const SizedBox(width: 64),
+
+              // Space untuk FAB tengah
+              const SizedBox(width: 56),
+
               Expanded(
                 child: _BottomNavItem(
                   data: _items[2],
@@ -113,15 +116,15 @@ class _BottomNavItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: 4,
-          vertical: 8,
+          horizontal: 2,
+          vertical: 2,
         ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(
-            horizontal: 4,
-            vertical: 8,
+            horizontal: 2,
+            vertical: 2,
           ),
           decoration: BoxDecoration(
             color: isActive ? AppColors.primarySoft : Colors.transparent,
@@ -129,22 +132,33 @@ class _BottomNavItem extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isActive ? data.activeIcon : data.icon,
                 color: foregroundColor,
-                size: 22,
+                size: 20,
               ),
-              const SizedBox(height: 4),
-              Text(
-                data.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: foregroundColor,
-                      fontWeight:
-                          isActive ? FontWeight.w700 : FontWeight.w500,
-                    ),
+
+              const SizedBox(height: 2),
+
+              Flexible(
+                child: Text(
+                  data.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(
+                        color: foregroundColor,
+                        fontWeight:
+                            isActive ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 10,
+                        height: 1,
+                      ),
+                ),
               ),
             ],
           ),

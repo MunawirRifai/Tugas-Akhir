@@ -8,10 +8,7 @@ import '../theme/app_theme.dart';
 class PickLocationPage extends StatefulWidget {
   final LatLng initialLocation;
 
-  const PickLocationPage({
-    super.key,
-    required this.initialLocation,
-  });
+  const PickLocationPage({super.key, required this.initialLocation});
 
   @override
   State<PickLocationPage> createState() => _PickLocationPageState();
@@ -45,10 +42,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
           _isFindingLocation = false;
         });
 
-        _showSnack(
-          'Location service belum aktif.',
-          isError: true,
-        );
+        _showSnack('Location service belum aktif.', isError: true);
 
         return;
       }
@@ -67,10 +61,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
           _isFindingLocation = false;
         });
 
-        _showSnack(
-          'Izin lokasi belum diberikan.',
-          isError: true,
-        );
+        _showSnack('Izin lokasi belum diberikan.', isError: true);
 
         return;
       }
@@ -99,10 +90,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
         _isFindingLocation = false;
       });
 
-      _showSnack(
-        'Gagal membaca lokasi saat ini: $error',
-        isError: true,
-      );
+      _showSnack('Gagal membaca lokasi saat ini: $error', isError: true);
     }
   }
 
@@ -133,10 +121,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
       appBar: AppBar(
         title: const Text('Pilih Lokasi'),
         actions: [
-          TextButton(
-            onPressed: _confirmLocation,
-            child: const Text('Pilih'),
-          ),
+          TextButton(onPressed: _confirmLocation, child: const Text('Pilih')),
         ],
       ),
       body: Stack(
@@ -172,9 +157,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.x2),
-              child: _InstructionCard(
-                coordinateText: _coordinateText,
-              ),
+              child: _InstructionCard(coordinateText: _coordinateText),
             ),
           ),
           Positioned(
@@ -200,9 +183,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
 class _InstructionCard extends StatelessWidget {
   final String coordinateText;
 
-  const _InstructionCard({
-    required this.coordinateText,
-  });
+  const _InstructionCard({required this.coordinateText});
 
   @override
   Widget build(BuildContext context) {
@@ -231,6 +212,7 @@ class _InstructionCard extends StatelessWidget {
             const SizedBox(width: AppSpacing.x2),
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -285,10 +267,7 @@ class _LocationActionPanel extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
-            Text(
-              coordinateText,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text(coordinateText, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: AppSpacing.x2),
             Row(
               children: [
@@ -347,10 +326,7 @@ class _LocationPin extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: Colors.white,
-              width: 3,
-            ),
+            border: Border.all(color: Colors.white, width: 3),
             boxShadow: AppShadows.brand,
           ),
           child: const Icon(
